@@ -21,6 +21,6 @@
 
     <com.example.guxiuzhong.favoreffect.FavorLayout
         android:id="@+id/id_favor_layout"
-        android:layout_width="match_parent"
-        android:layout_height="400dp" />
+        android:layout_width="150dp"
+        android:layout_height="200dp" />
 </LinearLayout>
