@@ -23,7 +23,7 @@ public class BezierEvaluator  implements TypeEvaluator<PointF> {
         @Override
         public PointF evaluate(float time, PointF startValue, PointF endValue) {
 
-//                Log.i("BezierEvaluator","time = "+time+"    startValue   x=  "+startValue.x+"  y= "+startValue.y+"    "+"endValue   x=  "+endValue.x+"  y= "+endValue.y);
+                Log.i("BezierEvaluator","time = "+time+"    startValue   x=  "+startValue.x+"  y= "+startValue.y+"    "+"endValue   x=  "+endValue.x+"  y= "+endValue.y);
                 float timeLeft = 1.0f - time;
                 PointF point = new PointF();//结果
 

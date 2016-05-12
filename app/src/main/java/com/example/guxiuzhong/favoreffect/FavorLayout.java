@@ -10,10 +10,8 @@ import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
@@ -41,11 +39,6 @@ public class FavorLayout extends RelativeLayout {
     private Drawable[] drawables;
     //定义一个LayoutParams 用它来控制子view的位置
     private LayoutParams lp;
-    // 我为了实现 变速效果 挑选了几种插补器
-    private Interpolator line = new LinearInterpolator();//线性
-    private Interpolator acc = new AccelerateInterpolator();//加速
-    private Interpolator dce = new DecelerateInterpolator();//减速
-    private Interpolator accdec = new AccelerateDecelerateInterpolator();//先加速后减速
     // 在init中初始化
     private Interpolator[] interpolators;
 
@@ -87,13 +80,6 @@ public class FavorLayout extends RelativeLayout {
         lp.addRule(CENTER_HORIZONTAL, TRUE); //这里的TRUE 要注意 不是true
         lp.addRule(ALIGN_PARENT_BOTTOM, TRUE);
         //好了,之后只要给子view设置LayoutParams就可以实现了
-
-        // 初始化插补器
-        interpolators = new Interpolator[4];
-        interpolators[0] = line;
-        interpolators[1] = dce;
-        interpolators[2] = dce;
-        interpolators[3] = dce;
     }
 
     @Override
@@ -104,6 +90,16 @@ public class FavorLayout extends RelativeLayout {
         mHeight = getMeasuredHeight();
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                addFavor();
+                break;
+        }
+        return true;
+    }
+
     public void addFavor() {
         ImageView imageView = new ImageView(getContext());
         //随机选一个
@@ -112,7 +108,7 @@ public class FavorLayout extends RelativeLayout {
         imageView.setLayoutParams(lp);
 
         addView(imageView);
-        Log.v(TAG, "add后子view数:" + getChildCount());
+//        Log.v(TAG, "add后子view数:" + getChildCount());
 
         Animator set = getAnimator(imageView);
         set.addListener(new AnimEndListener(imageView));
@@ -141,7 +137,6 @@ public class FavorLayout extends RelativeLayout {
         ObjectAnimator scaleY = ObjectAnimator.ofFloat(target, View.SCALE_Y, 0.3f, 1f);
         AnimatorSet enter = new AnimatorSet();
         enter.setDuration(300);
-        enter.setInterpolator(new LinearInterpolator());
         enter.playTogether(alpha, scaleX, scaleY);
         enter.setTarget(target);
         return enter;
@@ -175,10 +170,11 @@ public class FavorLayout extends RelativeLayout {
         return pointF;
     }
 
+
     private class BezierListenr implements ValueAnimator.AnimatorUpdateListener {
 
         private View target;
-
+        int x = 0;
         public BezierListenr(View target) {
             this.target = target;
         }
@@ -191,6 +187,7 @@ public class FavorLayout extends RelativeLayout {
             target.setY(pointF.y);
             // 这里偷个懒,顺便做一个alpha动画,这样alpha渐变也完成啦
             target.setAlpha(1 - animation.getAnimatedFraction());
+            Log.i(TAG,"x =  "+x++);
         }
     }
 
@@ -206,7 +203,7 @@ public class FavorLayout extends RelativeLayout {
             super.onAnimationEnd(animation);
             //因为不停的add 导致子view数量只增不减,所以在view动画结束后remove掉
             removeView((target));
-            Log.v(TAG, "removeView后子view数:" + getChildCount());
+//            Log.v(TAG, "removeView后子view数:" + getChildCount());
         }
     }
 }
