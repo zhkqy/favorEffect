@@ -78,7 +78,6 @@ public class HeartView {
 
         int add = random.nextInt((int)(distanceInitY/2));
 
-        Log.i("sssssss","distanceInitY="+distanceInitY+"    add="+add);
         distanceInitY = distanceInitY+add ;
     }
 
@@ -106,8 +105,8 @@ public class HeartView {
         long currentTime = SystemClock.uptimeMillis();
         float bezierTime = (currentTime - startTime) / bezierDuration;
 
-        Log.i("heartView", "currentTime = " + currentTime + "  startTime= " + startTime +
-                "   currentTime - startTime=" + (currentTime - startTime) + "    bezierDuration=" + bezierDuration+"   bezierTime=  "+bezierTime);
+//        Log.i("heartView", "currentTime = " + currentTime + "  startTime= " + startTime +
+//                "   currentTime - startTime=" + (currentTime - startTime) + "    bezierDuration=" + bezierDuration+"   bezierTime=  "+bezierTime);
 
         PointF pointF = getBezierPointF(bezierTime, startPointf, endPointf, pointA, pointB);
 

@@ -8,12 +8,15 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javax.xml.parsers.FactoryConfigurationError;
 
 public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -51,6 +54,20 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         heartViewArrayList.clear();
         setZOrderOnTop(true);
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                /****
+                 * 点击添加心形
+                 */
+                synchronized (FavorLayoutSurfaceView.class) {
+                    HeartView heartView = new HeartView(mContext, ScreenW, screenH);
+                    heartViewArrayList.add(heartView);
+                }
+            }
+        }, 1000, 200);
+
     }
 
 
@@ -80,21 +97,6 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
 
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                /****
-                 * 点击添加心形
-                 */
-                synchronized (this) {
-                    HeartView heartView = new HeartView(mContext, ScreenW, screenH);
-                    heartViewArrayList.add(heartView);
-                }
-                break;
-        }
-        return true;
-    }
 
     //最小程序要30毫秒执行刷新一次
     private long refreshIntervalTime = 16;
@@ -130,7 +132,7 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         try {
             if (canvas != null) {
                 refreshBackground(canvas);
-                synchronized (this) {
+                synchronized (FavorLayoutSurfaceView.class) {
                     Iterator<HeartView> iter = heartViewArrayList.iterator();
                     while (iter.hasNext()) {
                         HeartView heartView = iter.next();
@@ -142,7 +144,6 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
                             iter.remove();
                         }
                     }
-
                 }
             }
         } catch (Exception e) {
