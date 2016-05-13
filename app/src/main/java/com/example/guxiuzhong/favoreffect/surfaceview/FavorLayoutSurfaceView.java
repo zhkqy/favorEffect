@@ -97,7 +97,7 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
     }
 
     //最小程序要30毫秒执行刷新一次
-    private long refreshIntervalTime = 15;
+    private long refreshIntervalTime = 16;
 
     @Override
     public void run() {
@@ -105,6 +105,7 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
             long startTime = System.currentTimeMillis();
             myDraw();
             long endTime = System.currentTimeMillis();
+
             if ((endTime - startTime) < refreshIntervalTime) {
                 try {
                     Thread.sleep(refreshIntervalTime - (endTime - startTime));
@@ -133,8 +134,9 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
                     Iterator<HeartView> iter = heartViewArrayList.iterator();
                     while (iter.hasNext()) {
                         HeartView heartView = iter.next();
-                        heartView.drawHeartLogic();
+
                         heartView.drawHeart(canvas);
+                        heartView.drawHeartLogic();
 
                         if (heartView.isTop()) {
                             iter.remove();

@@ -9,11 +9,8 @@ import android.content.Context;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Interpolator;
-import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
@@ -40,8 +37,6 @@ public class FavorLayout extends RelativeLayout {
     //定义一个LayoutParams 用它来控制子view的位置
     private LayoutParams lp;
     // 在init中初始化
-    private Interpolator[] interpolators;
-
 
     public FavorLayout(Context context) {
         this(context, null);
@@ -122,9 +117,7 @@ public class FavorLayout extends RelativeLayout {
         ValueAnimator bezierValueAnimator = getBezierValueAnimator(target);
 
         AnimatorSet finalSet = new AnimatorSet();
-//        finalSet.playSequentially(set);
         finalSet.playTogether(set, bezierValueAnimator);
-//        finalSet.setInterpolator(interpolators[random.nextInt(4)]);//实现随机变速
         finalSet.setTarget(target);
         return finalSet;
     }
@@ -187,7 +180,6 @@ public class FavorLayout extends RelativeLayout {
             target.setY(pointF.y);
             // 这里偷个懒,顺便做一个alpha动画,这样alpha渐变也完成啦
             target.setAlpha(1 - animation.getAnimatedFraction());
-            Log.i(TAG,"x =  "+x++);
         }
     }
 

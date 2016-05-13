@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.os.Debug;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -18,7 +19,8 @@ import java.util.Random;
  */
 public class HeartView {
     Bitmap bitmap;
-    private int initX = 0, initY = 0;  // 初始心形的位置
+    private float initX = 0, initY = 0;  // 初始心形的位置
+    private float distanceInitY = 0;
     Paint paint;
     private Random random = new Random();//用于实现随机功能
     private int screenW, screenH;
@@ -28,9 +30,9 @@ public class HeartView {
      */
     private PointF pointA;
     private PointF pointB;
-    private float bezierDuration = 3000f;
+    private float bezierDuration = 3500f;
 
-    private float scaleDuation = 1000f;
+    private float scaleDuation = 300f;
 
     /**
      * 贝塞尔曲线起点和终点
@@ -43,7 +45,6 @@ public class HeartView {
      */
     private long startTime;
 
-
     float scaleX = 0;
     float scaleY = 0;
 
@@ -54,16 +55,31 @@ public class HeartView {
         pointA = getPointF(2);
         pointB = getPointF(1);
 
-        bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.red);
+        int temp = random.nextInt(3);
+
+        if(temp==0){
+            bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.red);
+        }else if(temp==1){
+            bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.blue);
+        }else if(temp ==2){
+            bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.yellow);
+        }
 
         startPointf = new PointF((screenW - bitmap.getWidth()) / 2, screenH - bitmap.getHeight());
-        endPointf = new PointF(random.nextInt(screenW), 0);
+        endPointf = new PointF(random.nextInt(screenW/2)+screenW/4, 0);
 
         paint = new Paint();
         paint.setAlpha(alpha);
+        paint.setAntiAlias(true);
         initX = screenW / 2 - bitmap.getWidth() / 2;
         initY = screenH - bitmap.getHeight();
 
+        distanceInitY =( screenH - bitmap.getHeight())-( screenH - bitmap.getHeight())*16/bezierDuration;
+
+        int add = random.nextInt((int)(distanceInitY/2));
+
+        Log.i("sssssss","distanceInitY="+distanceInitY+"    add="+add);
+        distanceInitY = distanceInitY+add ;
     }
 
     /****
@@ -80,6 +96,7 @@ public class HeartView {
      * 绘制心形位置逻辑
      */
 
+    long startLong = 0;
 
     public void drawHeartLogic() {
         /***
@@ -89,17 +106,36 @@ public class HeartView {
         long currentTime = SystemClock.uptimeMillis();
         float bezierTime = (currentTime - startTime) / bezierDuration;
 
-//        Log.i("heartView", "currentTime = " + currentTime + "  startTime= " + startTime +
-//                "   currentTime - startTime=" + (currentTime - startTime)+"    cha+"+cha + "    bezierDuration=" + bezierDuration+"   bezierTime=  "+bezierTime);
+        Log.i("heartView", "currentTime = " + currentTime + "  startTime= " + startTime +
+                "   currentTime - startTime=" + (currentTime - startTime) + "    bezierDuration=" + bezierDuration+"   bezierTime=  "+bezierTime);
 
         PointF pointF = getBezierPointF(bezierTime, startPointf, endPointf, pointA, pointB);
+
+
         /***
          * 1.设置滚动路线
          */
-        initX = (int) pointF.x;
-        initY = (int) pointF.y;
+        initX = pointF.x;
+//        initY =  pointF.y;
 
-        Log.i("heartView", "initX = " + initX + "  initY= " + initY + "    bezierTime=" + bezierTime);
+
+        /****
+         * 開始
+         */
+
+        long middleTime =  SystemClock.uptimeMillis()-startTime;
+        if(middleTime>bezierDuration){
+            initY = 0;
+        }else{
+            initY =( screenH - bitmap.getHeight())-( screenH - bitmap.getHeight())*middleTime/bezierDuration;
+        }
+
+//        initX =   (screenW - bitmap.getWidth()) / 2;
+
+        /****
+         *結束
+         */
+//        Log.i("heartView", "initX = " + initX + "  initY= " + initY + "    bezierTime=" + bezierTime);
 
         paint.setAlpha((int) (255 - (255f * bezierTime)));
         if (bezierTime >= 1) {
@@ -127,8 +163,8 @@ public class HeartView {
 
     private PointF getPointF(int scale) {
         PointF pointF = new PointF();
-        pointF.x = random.nextInt((screenW - 100));
-        pointF.y = random.nextInt((screenH - 100)) / scale;
+        pointF.x = random.nextInt((screenW/2))+screenW/4;
+        pointF.y = random.nextInt((screenH/2)) +screenH/4;
         return pointF;
     }
 
