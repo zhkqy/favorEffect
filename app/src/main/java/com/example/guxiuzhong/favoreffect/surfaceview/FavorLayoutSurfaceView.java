@@ -23,6 +23,7 @@ import java.util.TimerTask;
 
 public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
+
     private ArrayList<HeartView> heartViewArrayList = new ArrayList<>();  //装载所有心形
     private SurfaceHolder surfaceHolder;
     private Paint paint;
@@ -32,11 +33,13 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
     private Context mContext;
     private Timer timer;
     private TimerTask timerTask;
-    private int jishicount = 0;
     private ArrayList<HeartViewModel> imageCache = new ArrayList<HeartViewModel>();
     private FavorLayoutSurfaceviewUtils surfaceviewUtils;
 
-    private int onlineNum = 10000;
+    /***
+     * 间隔时间  默认 500 毫秒
+     */
+    private int intervalTime = 200;
 
 
     public FavorLayoutSurfaceView(Context context) {
@@ -64,7 +67,6 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
         timer = new Timer();
 
-        jishicount = 0;
     }
 
     @Override
@@ -87,7 +89,7 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
                 addHeart(false);
             }
         };
-        timer.schedule(timerTask, 1000, 200);
+        timer.schedule(timerTask, 10, intervalTime);
     }
 
     private void clearTimerTask() {
@@ -219,10 +221,6 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
     public void addHeart(boolean isSelf) {
         synchronized (FavorLayoutSurfaceView.class) {
 
-            if (jishicount >= onlineNum) {
-                clearTimerTask();
-                return;
-            }
             InputStream is = null;
 
             if(isSelf){
@@ -253,16 +251,15 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
                     }
                     HeartView heartView = new HeartView( surfaceviewUtils.getName(), ScreenW, screenH, bitmap);
                     heartViewArrayList.add(heartView);
-                    jishicount++;
+
                 }
             }
         }
     }
 
     public void setOnlineNum(int onlineNum) {
-        this.onlineNum = onlineNum;
-        jishicount=0;
         clearTimerTask();
+        onlineToRate(onlineNum);
         timerTask = new TimerTask() {
             @Override
             public void run() {
@@ -272,6 +269,19 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
                 addHeart(false);
             }
         };
-        timer.schedule(timerTask, 1000, 200);
+        timer.schedule(timerTask, 10, intervalTime);
+    }
+
+    /***
+     * 根据房间人数  默认红心速率
+     */
+    private void onlineToRate(int onlineNum){
+        if(onlineNum>=10000){
+            intervalTime = 200;
+        }else if(onlineNum<=1000){
+            intervalTime = 500;
+        }else{
+            intervalTime  = 500-(int)((float)(onlineNum-1000)/9000*300) ;
+        }
     }
 }
