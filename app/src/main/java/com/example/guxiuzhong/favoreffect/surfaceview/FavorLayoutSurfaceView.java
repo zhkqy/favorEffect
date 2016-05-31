@@ -2,7 +2,6 @@ package com.example.guxiuzhong.favoreffect.surfaceview;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -10,19 +9,18 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import java.io.InputStream;
-import java.lang.ref.SoftReference;
+import com.bumptech.glide.Glide;
+import com.example.guxiuzhong.favoreffect.R;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
-
 
     private ArrayList<HeartView> heartViewArrayList = new ArrayList<>();  //装载所有心形
     private SurfaceHolder surfaceHolder;
@@ -33,13 +31,13 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
     private Context mContext;
     private Timer timer;
     private TimerTask timerTask;
-    private ArrayList<HeartViewModel> imageCache = new ArrayList<HeartViewModel>();
     private FavorLayoutSurfaceviewUtils surfaceviewUtils;
+    private Object synchCacheObj = new Object();//申请一个对象  ;
 
     /***
      * 间隔时间  默认 500 毫秒
      */
-    private int intervalTime = 200;
+    private int intervalTime = 500;
 
 
     public FavorLayoutSurfaceView(Context context) {
@@ -52,10 +50,12 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         init(context);
     }
 
+    Bitmap bitmapXin1, bitmapXin2, bitmapXin3;
+
     private void init(Context context) {
+        this.mContext = context;
 
         surfaceviewUtils = new FavorLayoutSurfaceviewUtils();
-        this.mContext = context;
         surfaceHolder = this.getHolder();
         surfaceHolder.addCallback(this);
         paint = new Paint();
@@ -71,6 +71,13 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        if (isOutsideStop || isIngkeeStop) {
+            return;
+        }
+
+        synchronized (FavorLayoutSurfaceView.class) {
+            heartViewArrayList.clear();
+        }
 
         ScreenW = this.getWidth();
         screenH = this.getHeight();
@@ -104,7 +111,10 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
     }
+
+
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
@@ -112,12 +122,62 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         clearTimerTask();
     }
 
+    boolean isOutsideStop = false;  //是否为 除了状态栏 其他的外部停止
+
+    boolean isIngkeeStop = false;   //是否为状态栏外部停止
+
+    public void setIsIngkeeStop(boolean isIngkeeStop) {
+        this.isIngkeeStop = isIngkeeStop;
+    }
+
+    public void setIsOutsideStop(boolean isOutsideStop) {
+        this.isOutsideStop = isOutsideStop;
+    }
+
+    public boolean isOutsideStop() {
+        return isOutsideStop;
+    }
 
     //最小程序要30毫秒执行刷新一次
     private long refreshIntervalTime = 16;
 
     @Override
     public void run() {
+
+        bitmapXin1 = null;
+        try {
+            bitmapXin1 = Glide.
+                    with(mContext).
+                    load(R.mipmap.xin_purple).
+                    asBitmap().
+                    into(-1, -1).
+                    get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        bitmapXin2 = null;
+        try {
+            bitmapXin2 = Glide.
+                    with(mContext).
+                    load(R.mipmap.xin_yellow).
+                    asBitmap().
+                    into(-1, -1).
+                    get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        bitmapXin3 = null;
+        try {
+            bitmapXin3 = Glide.
+                    with(mContext).
+                    load(R.mipmap.xin_green).
+                    asBitmap().
+                    into(-1, -1).
+                    get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         while (flag) {
             long startTime = System.currentTimeMillis();
             myDraw();
@@ -133,11 +193,9 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         }
     }
 
-
     private void refreshBackground(Canvas canvas) {
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
     }
-
 
     private void myDraw() {
         Canvas canvas = surfaceHolder.lockCanvas();
@@ -151,16 +209,9 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
                     Iterator<HeartView> iter = heartViewArrayList.iterator();
                     while (iter.hasNext()) {
                         HeartView heartView = iter.next();
-
                         heartView.drawHeart(canvas);
                         heartView.drawHeartLogic();
-
                         if (heartView.isTop()) {
-                            Bitmap bitmap = heartView.getBitmap();
-                            addBitmapToCache(heartView.getName(), bitmap);
-//                            if (bitmap != null && !bitmap.isRecycled()) {
-//                                bitmap.recycle();
-//                            }
                             iter.remove();
                         }
                     }
@@ -175,84 +226,36 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
         }
     }
 
-    public void addBitmapToCache(String name, Bitmap bitmap) {
-
-        // 软引用的Bitmap对象
-        SoftReference<Bitmap> softBitmap = new SoftReference<Bitmap>(bitmap);
-        // 添加该对象到Map中使其缓存
-        imageCache.add(new HeartViewModel(name, softBitmap));
-    }
-
-    public Bitmap getBitmapByPath(String name) {
-
-        // 从缓存中取软引用的Bitmap对象
-        SoftReference<Bitmap> softBitmap = null;
-        boolean flag = true;
-
-        Iterator<HeartViewModel> iter = imageCache.iterator();
-        while (flag && iter.hasNext()) {
-            HeartViewModel viewModel = iter.next();
-            if (name.equals(viewModel.getName())) {
-                softBitmap = viewModel.getSoftBitmap();
-                iter.remove();
-                flag = false;
-            }
-        }
-        // 判断是否存在软引用
-        if (softBitmap == null) {
-            return null;
-        }
-        // 取出Bitmap对象，如果由于内存不足Bitmap被回收，将取得空
-        Bitmap bitmap = softBitmap.get();
-        return bitmap;
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        addSelfHeart();
-        return super.onTouchEvent(event);
-
-    }
-
     public void addSelfHeart() {
         addHeart(true);
     }
 
     public void addHeart(boolean isSelf) {
-        synchronized (FavorLayoutSurfaceView.class) {
 
-            InputStream is = null;
+        if (isSelf) {
+            surfaceviewUtils.randomSelfHeart();
+        } else {
+            surfaceviewUtils.randomHeart();
+        }
+        String name = surfaceviewUtils.getName();
 
-            if(isSelf){
-                surfaceviewUtils.randomSelfHeart();
-            }else{
-                surfaceviewUtils.randomHeart();
+        if (!TextUtils.isEmpty(name)) {
+
+            Bitmap bitmap = null;
+
+            if (name.equals("purple")) {
+                bitmap = bitmapXin1;
+            } else if (name.equals("yellow")) {
+                bitmap = bitmapXin2;
+            } else if (name.equals("green")) {
+                bitmap = bitmapXin3;
             }
-
-            if (!TextUtils.isEmpty(surfaceviewUtils.getName())&&surfaceviewUtils.getValue()!=0) {
-
-                Bitmap b = getBitmapByPath(surfaceviewUtils.getName());
-                if (b != null) {
-                    HeartView heartView = new HeartView(surfaceviewUtils.getName(), ScreenW, screenH, b);
-                    heartViewArrayList.add(heartView);
-                } else {
-                    is = mContext.getResources().openRawResource(surfaceviewUtils.getValue());
-                    Bitmap bitmap = null;
-                    try {
-                        // 实例化Bitmap
-                        bitmap = BitmapFactory.decodeResource(mContext.getResources(), surfaceviewUtils.getValue());
-                    } catch (OutOfMemoryError e) {
-                        //
-                    } catch (Exception e) {
-
-                    }
-                    if (bitmap == null) {
-                        return;
-                    }
-                    HeartView heartView = new HeartView( surfaceviewUtils.getName(), ScreenW, screenH, bitmap);
-                    heartViewArrayList.add(heartView);
-
-                }
+            if (bitmap == null) {
+                return;
+            }
+            HeartView heartView = new HeartView(name, ScreenW, screenH, bitmap);
+            synchronized (FavorLayoutSurfaceView.class) {
+                heartViewArrayList.add(heartView);
             }
         }
     }
@@ -275,13 +278,13 @@ public class FavorLayoutSurfaceView extends SurfaceView implements SurfaceHolder
     /***
      * 根据房间人数  默认红心速率
      */
-    private void onlineToRate(int onlineNum){
-        if(onlineNum>=10000){
+    private void onlineToRate(int onlineNum) {
+        if (onlineNum >= 10000) {
             intervalTime = 200;
-        }else if(onlineNum<=1000){
+        } else if (onlineNum <= 1000) {
             intervalTime = 500;
-        }else{
-            intervalTime  = 500-(int)((float)(onlineNum-1000)/9000*300) ;
+        } else {
+            intervalTime = 500 - (int) ((float) (onlineNum - 1000) / 9000 * 300);
         }
     }
 }
